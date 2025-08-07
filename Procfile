@@ -1,1 +1,1 @@
-worker: python NKQ_HOSE_TOP_SCREENER.py
+worker: python Hose_Top_Screener_Daily.py
