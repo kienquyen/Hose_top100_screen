@@ -1,0 +1,6 @@
+requests
+pandas
+numpy
+ta
+pytz
+vnstock_data

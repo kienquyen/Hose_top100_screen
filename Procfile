@@ -1,0 +1,1 @@
+worker: python NKQ_HOSE_TOP_SCREENER.py
