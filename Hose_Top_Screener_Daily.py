@@ -24,7 +24,7 @@ VN100_SYMBOLS = [
 
 # === CONFIGURATION ===
 TIMEFRAME = '1D'  # Fixed timeframe for VN Stocks
-DAILY_RUN_HOUR = 6  # 🕘 Change this to configure the run time (0–23)
+DAILY_RUN_HOUR = 5  # 🕘 Change this to configure the run time (0–23)
 webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
 
 # === DISCORD NOTIFICATION ===
@@ -336,9 +336,11 @@ def generate_signal_table(results):
 
 
 # === MAIN SCANNER ===
-def run_screener_latest():
-    today = pd.Timestamp.today().normalize()
-    selected_date = today
+def run_screener_latest(run_date=None):
+    if run_date is None:
+        run_date = pd.Timestamp.today().normalize()
+
+    selected_date = run_date
     selected_date_str = selected_date.strftime("%Y-%m-%d")
     print(f"📈 Running screener for {selected_date_str}")
 
@@ -444,10 +446,8 @@ def run_screener_latest():
     send_discord(discord_msg, webhook_url="DISCORD_WEBHOOK_URL")
 
 # Ensure this helper is available in your script
-# def generate_signal_table(results): ... (from earlier step)
 # === DAILY SCHEDULER ===
-# === DAILY SCHEDULER ===
-def wait_until_next_run(hour=DAILY_RUN_HOUR):
+def wait_until_next_run(hour= DAILY_RUN_HOUR):  # default run at 8:00 AM
     vietnam_tz = pytz.timezone("Asia/Ho_Chi_Minh")
     now = datetime.now(vietnam_tz)
 
@@ -459,7 +459,13 @@ def wait_until_next_run(hour=DAILY_RUN_HOUR):
     print(f"⏳ Waiting {int(wait_seconds)} seconds until {hour}:00 Vietnam Time...")
     return wait_seconds
 
+
 # === MAIN LOOP ===
 while True:
     time.sleep(wait_until_next_run())
-    run_screener_latest()
+
+    # Get yesterday's date in Vietnam timezone
+    vietnam_tz = pytz.timezone("Asia/Ho_Chi_Minh")
+    run_date = datetime.now(vietnam_tz).date() - timedelta(days=1)
+    run_screener_latest(pd.Timestamp(run_date))
+
