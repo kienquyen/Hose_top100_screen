@@ -24,7 +24,7 @@ VN100_SYMBOLS = [
 
 # === CONFIGURATION ===
 TIMEFRAME = '1D'  # Fixed timeframe for VN Stocks
-DAILY_RUN_HOUR = 18  # 🕘 Change this to configure the run time (0–23)
+DAILY_RUN_HOUR = 6  # 🕘 Change this to configure the run time (0–23)
 webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
 
 # === DISCORD NOTIFICATION ===
