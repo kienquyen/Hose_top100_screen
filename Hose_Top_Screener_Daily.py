@@ -19,17 +19,16 @@ VN100_SYMBOLS = [
     "REE", "SAB", "SAM", "SBT", "SCR", "SCS", "SHB", "SJS", "SSB", "SSI", "STB",
     "SZC", "TCB", "TCH", "TMS", "TPB", "VCB", "VCG", "VCI", "VHC", "VHM",
     "VIB", "VIC", "VIX", "VJC", "VND", "VNM", "VPB", "VPI", "VRE", "VSH",
-    "VIX","VSC",
+    "VIX", "VSC",
 ]
 
 # === CONFIGURATION ===
 TIMEFRAME = '1D'  # Fixed timeframe for VN Stocks
 DAILY_RUN_HOUR = 18  # 🕘 Change this to configure the run time (0–23)
-webhook_url = os.getenv("webhook_url")
-
+webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
 
 # === DISCORD NOTIFICATION ===
-def send_discord(message, webhook_url):
+def send_discord(message, webhook_url="DISCORD_WEBHOOK_URL"):
     max_length = 2000
     parts = [message[i:i + max_length] for i in range(0, len(message), max_length)]
 
@@ -442,7 +441,7 @@ def run_screener_latest():
     else:
         discord_msg = f"📅 {selected_date_str}: Không có tín hiệu BUY1, BUY2, BUY3."
 
-    send_discord(discord_msg, webhook_url)
+    send_discord(discord_msg, webhook_url="DISCORD_WEBHOOK_URL")
 
 # Ensure this helper is available in your script
 # def generate_signal_table(results): ... (from earlier step)
