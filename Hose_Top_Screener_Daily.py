@@ -7,6 +7,8 @@ import time
 from datetime import datetime, timedelta, timezone
 import pytz
 from vnstock_data import Listing, Quote
+import sys
+print(f"🐍 Python version: {sys.version}")
 
 VN100_SYMBOLS = [
     "AAA", "ACB", "AGG", "ANV", "ASM", "BCG", "BCM", "BID", "BMP", "BVH",
