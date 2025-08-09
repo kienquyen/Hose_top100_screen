@@ -29,7 +29,7 @@ VN100_SYMBOLS = [
 # === CONFIGURATION ===
 TIMEFRAME = '1D'  # Fixed timeframe for VN Stocks
 DAILY_RUN_HOUR   = int(os.getenv("DAILY_RUN_HOUR", 23))   # 0–23
-DAILY_RUN_MINUTE = int(os.getenv("DAILY_RUN_MINUTE", 34)) # 0–59
+DAILY_RUN_MINUTE = int(os.getenv("DAILY_RUN_MINUTE", 38)) # 0–59
 
 webhook_url = os.getenv("DISCORD_WEBHOOK_URL")  # keep using env for webhook
 
