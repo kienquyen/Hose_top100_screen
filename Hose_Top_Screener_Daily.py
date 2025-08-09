@@ -9,6 +9,8 @@ import pytz
 from vnstock_data import Listing, Quote
 import sys
 print(f"🐍 Python version: {sys.version}")
+import sys, os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 VN100_SYMBOLS = [
     "AAA", "ACB", "AGG", "ANV", "ASM", "BCG", "BCM", "BID", "BMP", "BVH",
