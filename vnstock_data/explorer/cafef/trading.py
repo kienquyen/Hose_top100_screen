@@ -12,7 +12,7 @@ _A=None
 import requests,pandas as pd
 from typing import Union,Optional,Dict
 from vnstock_data.explorer.cafef.const import _BASE_URL,_PRICE_HISTORY_MAP,_FOREIGN_TRADE_MAP,_PROP_TRADE_MAP,_ORDER_STATS_MAP,_INSIDER_DEAL_MAP
-from vnstock_data.core.utils.parser import days_between
+from ...core.utils.parser import days_between
 from vnstock_data.core.utils.user_agent import get_headers
 from vnstock.core.utils.logger import get_logger
 logger=get_logger(__name__)
