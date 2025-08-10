@@ -4,4 +4,3 @@ numpy
 ta
 pytz
 tenacity
-vnii
