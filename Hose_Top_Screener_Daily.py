@@ -6,6 +6,27 @@ import os
 import time
 from datetime import datetime, timedelta, timezone
 import pytz
+# 1) Read PAT from Railway env var (add this in Railway → Variables)
+GITHUB_PAT = os.getenv("GITHUB_PAT")  # set to your ghp_xxx token
+
+# 2) Ask vnii where to store tokens
+try:
+    from vnii.colab_helper import get_vnstock_data_dir
+    data_dir = Path(get_vnstock_data_dir())
+except Exception as e:
+    # fallback if helper import path differs; adjust to your tree if needed
+    print("⚠️ Could not import get_vnstock_data_dir:", e)
+    data_dir = Path.home() / ".vnstock"  # sensible default
+
+data_dir.mkdir(parents=True, exist_ok=True)
+
+# 3) If you have a PAT, create token.json — TokenManager will use this directly
+if GITHUB_PAT:
+    token_json = {"access_token": GITHUB_PAT}
+    (data_dir / "token.json").write_text(json.dumps(token_json, indent=2))
+    print("✅ Wrote token.json for vnstock at:", data_dir)
+else:
+    print("⚠️ GITHUB_PAT not set; vnstock will try access_token.json refresh method")
 from vnstock_data import Listing, Quote
 import sys
 print(f"🐍 Python version: {sys.version}")
