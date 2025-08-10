@@ -5,3 +5,4 @@ ta
 pytz
 tenacity
 psutil
+packaging
