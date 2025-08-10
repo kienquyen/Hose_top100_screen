@@ -4,4 +4,4 @@ numpy
 ta
 pytz
 tenacity
-vnii==0.1.1
+vnii
