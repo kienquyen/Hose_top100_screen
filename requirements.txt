@@ -6,3 +6,4 @@ pytz
 tenacity
 psutil
 packaging
+pydantic
