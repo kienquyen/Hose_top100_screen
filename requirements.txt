@@ -8,3 +8,4 @@ psutil
 packaging
 pydantic
 matplotlib
+seaborn
