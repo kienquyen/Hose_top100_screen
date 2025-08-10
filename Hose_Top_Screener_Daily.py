@@ -122,7 +122,8 @@ VN100_SYMBOLS = [
 
 # === CONFIGURATION ===
 TIMEFRAME = '1D'  # Fixed timeframe for VN Stocks
-DAILY_RUN_HOUR = 5  # 🕘 Change this to configure the run time (0–23)
+DAILY_RUN_HOUR   = int(os.getenv("DAILY_RUN_HOUR", 19))   # 0–23
+DAILY_RUN_MINUTE = int(os.getenv("DAILY_RUN_MINUTE", 00)) # 0–59
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL") or "YOUR_DISCORD_WEBHOOK_URL"
 
 # === DISCORD NOTIFICATION ===
@@ -545,24 +546,24 @@ def run_screener_latest(run_date=None):
 
 # Ensure this helper is available in your script
 # === DAILY SCHEDULER ===
-def wait_until_next_run(hour= DAILY_RUN_HOUR):  # default run at 8:00 AM
+def wait_until_next_run(hour=DAILY_RUN_HOUR, minute=DAILY_RUN_MINUTE):
     vietnam_tz = pytz.timezone("Asia/Ho_Chi_Minh")
     now = datetime.now(vietnam_tz)
 
-    next_run = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+    next_run = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
     if now >= next_run:
         next_run += timedelta(days=1)
 
-    wait_seconds = (next_run - now).total_seconds()
-    print(f"⏳ Waiting {int(wait_seconds)} seconds until {hour}:00 Vietnam Time...")
+    wait_seconds = int((next_run - now).total_seconds())
+    print(f"⏳ Waiting {wait_seconds} seconds until {next_run.strftime('%Y-%m-%d %H:%M')} Vietnam Time...")
     return wait_seconds
 
 
 # === MAIN LOOP ===
 while True:
-    time.sleep(wait_until_next_run())
+    time.sleep(wait_until_next_run(DAILY_RUN_HOUR, DAILY_RUN_MINUTE))
 
-    # Get yesterday's date in Vietnam timezone
+    # Run for yesterday (Vietnam time)
     vietnam_tz = pytz.timezone("Asia/Ho_Chi_Minh")
-    run_date = datetime.now(vietnam_tz).date() - timedelta(days=1)
+    run_date = datetime.now(vietnam_tz).date() #- timedelta(days=1)
     run_screener_latest(pd.Timestamp(run_date))
