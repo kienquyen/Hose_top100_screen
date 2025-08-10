@@ -9,8 +9,6 @@ import pytz
 from vnstock_data import Listing, Quote
 import sys
 print(f"🐍 Python version: {sys.version}")
-import sys, os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 VN100_SYMBOLS = [
     "AAA", "ACB", "AGG", "ANV", "ASM", "BCG", "BCM", "BID", "BMP", "BVH",
@@ -23,18 +21,16 @@ VN100_SYMBOLS = [
     "REE", "SAB", "SAM", "SBT", "SCR", "SCS", "SHB", "SJS", "SSB", "SSI", "STB",
     "SZC", "TCB", "TCH", "TMS", "TPB", "VCB", "VCG", "VCI", "VHC", "VHM",
     "VIB", "VIC", "VIX", "VJC", "VND", "VNM", "VPB", "VPI", "VRE", "VSH",
-    "VIX", "VSC",
+    "VIX","VSC",
 ]
 
 # === CONFIGURATION ===
 TIMEFRAME = '1D'  # Fixed timeframe for VN Stocks
-DAILY_RUN_HOUR   = int(os.getenv("DAILY_RUN_HOUR", 23))   # 0–23
-DAILY_RUN_MINUTE = int(os.getenv("DAILY_RUN_MINUTE", 38)) # 0–59
-
-webhook_url = os.getenv("DISCORD_WEBHOOK_URL")  # keep using env for webhook
+DAILY_RUN_HOUR = 5  # 🕘 Change this to configure the run time (0–23)
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL") or "YOUR_DISCORD_WEBHOOK_URL"
 
 # === DISCORD NOTIFICATION ===
-def send_discord(message, webhook_url="DISCORD_WEBHOOK_URL"):
+def send_discord(message, webhook_url=DISCORD_WEBHOOK_URL):
     max_length = 2000
     parts = [message[i:i + max_length] for i in range(0, len(message), max_length)]
 
@@ -449,28 +445,28 @@ def run_screener_latest(run_date=None):
     else:
         discord_msg = f"📅 {selected_date_str}: Không có tín hiệu BUY1, BUY2, BUY3."
 
-    send_discord(discord_msg, webhook_url="DISCORD_WEBHOOK_URL")
+    send_discord(discord_msg, webhook_url=DISCORD_WEBHOOK_URL)
 
 # Ensure this helper is available in your script
 # === DAILY SCHEDULER ===
-def wait_until_next_run(hour=DAILY_RUN_HOUR, minute=DAILY_RUN_MINUTE):
+def wait_until_next_run(hour= DAILY_RUN_HOUR):  # default run at 8:00 AM
     vietnam_tz = pytz.timezone("Asia/Ho_Chi_Minh")
     now = datetime.now(vietnam_tz)
 
-    next_run = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    next_run = now.replace(hour=hour, minute=0, second=0, microsecond=0)
     if now >= next_run:
         next_run += timedelta(days=1)
 
-    wait_seconds = int((next_run - now).total_seconds())
-    print(f"⏳ Waiting {wait_seconds} seconds until {next_run.strftime('%Y-%m-%d %H:%M')} Vietnam Time...")
+    wait_seconds = (next_run - now).total_seconds()
+    print(f"⏳ Waiting {int(wait_seconds)} seconds until {hour}:00 Vietnam Time...")
     return wait_seconds
+
 
 # === MAIN LOOP ===
 while True:
-    time.sleep(wait_until_next_run(DAILY_RUN_HOUR, DAILY_RUN_MINUTE))
+    time.sleep(wait_until_next_run())
 
-    # Run for yesterday (Vietnam time)
+    # Get yesterday's date in Vietnam timezone
     vietnam_tz = pytz.timezone("Asia/Ho_Chi_Minh")
     run_date = datetime.now(vietnam_tz).date() - timedelta(days=1)
     run_screener_latest(pd.Timestamp(run_date))
-
