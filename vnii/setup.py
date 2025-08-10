@@ -1,0 +1,2 @@
+from setuptools import setup,find_packages
+setup(name='vnii',version='0.1.0',packages=find_packages(),install_requires=['cryptography>=3.4.0','requests>=2.25.1','psutil>=5.8.0'],test_suite='tests',python_requires='>=3.10')
