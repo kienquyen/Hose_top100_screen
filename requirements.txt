@@ -9,3 +9,4 @@ packaging
 pydantic
 matplotlib
 seaborn
+squarify
