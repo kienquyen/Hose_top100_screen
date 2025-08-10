@@ -1,44 +1,86 @@
+# --- vnii bootstrap: token + user.json + license preflight ---
 import os, json, requests
 from pathlib import Path
 
-# ======= Write token.json for vnii =======
-GITHUB_PAT = os.getenv("GITHUB_PAT")
-if not GITHUB_PAT:
-    raise SystemExit("GITHUB_PAT is not set. Add it in Railway → Variables.")
+# 0) Required env vars (set in Railway → Variables)
+GITHUB_PAT = os.getenv("GITHUB_PAT")  # -> ghp_xxx, must have repo scope
+OWNER      = os.getenv("VNS_REPO_OWNER")           # e.g. "vnstock-hq"
+REPO       = os.getenv("VNS_REPO_NAME", "silver_sponsorship")
 
-# Where vnii expects its data dir
+if not GITHUB_PAT:
+    raise SystemExit("GITHUB_PAT not set. Add it in Railway → Variables.")
+
+# 1) Resolve vnii data dir
 try:
     from vnii.colab_helper import get_vnstock_data_dir
     data_dir = Path(get_vnstock_data_dir())
-except Exception:
+except Exception as e:
+    print("⚠️ Could not import get_vnstock_data_dir:", e)
     data_dir = Path.home() / ".vnstock"
+
 data_dir.mkdir(parents=True, exist_ok=True)
 
-# Create token.json so TokenManager uses this directly (VPS/manual mode)
-(data_dir / "token.json").write_text(json.dumps({"access_token": GITHUB_PAT}, indent=2))
-print("✅ token.json written to:", data_dir / "token.json")
+# 2) Write token.json so TokenManager uses PAT in VPS/manual mode
+token_path = data_dir / "token.json"
+token_path.write_text(json.dumps({"access_token": GITHUB_PAT}, indent=2))
+print("✅ token.json written to:", token_path)
 
-# ======= License preflight =======
-OWNER = os.getenv("VNS_REPO_OWNER")       # e.g. "vnstockhq" (ask vendor for exact)
-REPO  = os.getenv("VNS_REPO_NAME", "silver_sponsorship")
+# 3) Ensure id/user.json exists with at least a 'user' field
+id_dir = data_dir / "id"
+id_dir.mkdir(parents=True, exist_ok=True)
+user_json = id_dir / "user.json"
 
+# Optional overrides via env
+OVR_USER  = os.getenv("VNS_USERNAME")  # manual override
+OVR_EMAIL = os.getenv("VNS_EMAIL")
+
+login, email = OVR_USER, OVR_EMAIL
+if not login:
+    # fetch from GitHub API
+    try:
+        r = requests.get(
+            "https://api.github.com/user",
+            headers={"Authorization": f"token {GITHUB_PAT}",
+                     "Accept": "application/vnd.github.v3+json"},
+            timeout=10
+        )
+        if r.status_code == 200:
+            u = r.json()
+            login = u.get("login") or login
+            email = u.get("email") or email
+        else:
+            print(f"⚠️ GitHub /user returned {r.status_code}: {r.text[:200]}")
+    except Exception as e:
+        print("⚠️ Could not query GitHub /user:", e)
+
+if not login:
+    print("⚠️ Could not determine GitHub username. "
+          "Set VNS_USERNAME to silence vnii user check.")
+
+# Write/refresh user.json
+payload = {"user": login or "unknown"}
+if email:
+    payload["email"] = email
+user_json.write_text(json.dumps(payload, indent=2))
+print("📝 user.json written to:", user_json, "=>", payload)
+
+# 4) (Optional but helpful) license preflight against the sponsorship repo
 if not OWNER:
-    raise SystemExit("VNS_REPO_OWNER not set. Ask vendor for the correct GitHub org/user and set it in Railway Variables.")
+    print("⚠️ VNS_REPO_OWNER not set; skipping repo preflight.")
+else:
+    url = f"https://api.github.com/repos/{OWNER}/{REPO}"
+    resp = requests.get(url, headers={"Authorization": f"token {GITHUB_PAT}",
+                                      "Accept": "application/vnd.github.v3+json"},
+                        timeout=10)
+    print(f"🔎 License check: GET {url} -> {resp.status_code}")
+    if resp.status_code != 200:
+        print("Body:", resp.text[:400])
+        raise SystemExit(
+            "❌ PAT missing repo access. Check VNS_REPO_OWNER/VNS_REPO_NAME and PAT scopes."
+        )
 
-url = f"https://api.github.com/repos/{OWNER}/{REPO}"
-resp = requests.get(url, headers={"Authorization": f"token {GITHUB_PAT}",
-                                  "Accept": "application/vnd.github.v3+json"})
-print(f"🔎 License check: GET {url} -> {resp.status_code}")
-if resp.status_code != 200:
-    print("Body:", resp.text[:400])
-    raise SystemExit(
-        "❌ Your PAT does not have access to the sponsorship repo.\n"
-        "• Confirm OWNER/REPO env vars (VNS_REPO_OWNER / VNS_REPO_NAME)\n"
-        "• Ensure your GitHub account has access to that repo\n"
-        "• PAT must have repo scope (classic) or explicit repo read access (fine‑grained)."
-    )
-
-print("✅ License check passed for:", OWNER, "/", REPO)
+print("✅ vnii bootstrap complete.")
+# --- end vnii bootstrap ---
 
 import requests
 import pandas as pd
