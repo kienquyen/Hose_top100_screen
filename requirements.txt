@@ -7,3 +7,4 @@ tenacity
 psutil
 packaging
 pydantic
+matplotlib
