@@ -1,42 +1,49 @@
-# --- vnii bootstrap: token + user.json + license preflight ---
-import os, json, requests
+# ==== vnii bootstrap (put this at the very top) ====
+import os, json, requests, base64, time
 from pathlib import Path
 
-# 0) Required env vars (set in Railway → Variables)
-GITHUB_PAT = os.getenv("GITHUB_PAT")  # -> ghp_xxx, must have repo scope
-OWNER      = os.getenv("VNS_REPO_OWNER")           # e.g. "vnstock-hq"
-REPO       = os.getenv("VNS_REPO_NAME", "silver_sponsorship")
-
-if not GITHUB_PAT:
-    raise SystemExit("GITHUB_PAT not set. Add it in Railway → Variables.")
-
-# 1) Resolve vnii data dir
+# --- Resolve vnstock data dir (matches vnii) ---
 try:
     from vnii.colab_helper import get_vnstock_data_dir
-    data_dir = Path(get_vnstock_data_dir())
+    DATA_DIR = Path(get_vnstock_data_dir())
 except Exception as e:
     print("⚠️ Could not import get_vnstock_data_dir:", e)
-    data_dir = Path.home() / ".vnstock"
+    DATA_DIR = Path.home() / ".vnstock"
 
-data_dir.mkdir(parents=True, exist_ok=True)
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+(ID_DIR := DATA_DIR / "id").mkdir(parents=True, exist_ok=True)
 
-# 2) Write token.json so TokenManager uses PAT in VPS/manual mode
-token_path = data_dir / "token.json"
-token_path.write_text(json.dumps({"access_token": GITHUB_PAT}, indent=2))
-print("✅ token.json written to:", token_path)
+# --- Option 1: provide a full access_token.json via env (preferred bypass) ---
+ACCESS_TOKEN_JSON = os.getenv("ACCESS_TOKEN_JSON")
+ACCESS_TOKEN_B64  = os.getenv("ACCESS_TOKEN_B64")
 
-# 3) Ensure id/user.json exists with at least a 'user' field
-id_dir = data_dir / "id"
-id_dir.mkdir(parents=True, exist_ok=True)
-user_json = id_dir / "user.json"
+if ACCESS_TOKEN_JSON or ACCESS_TOKEN_B64:
+    try:
+        payload = (json.loads(ACCESS_TOKEN_JSON)
+                   if ACCESS_TOKEN_JSON
+                   else json.loads(base64.b64decode(ACCESS_TOKEN_B64).decode("utf-8")))
+        (DATA_DIR / "access_token.json").write_text(json.dumps(payload, indent=2))
+        print("📝 wrote access_token.json to:", DATA_DIR / "access_token.json")
+        time.sleep(0.05)
+    except Exception as ex:
+        print("❌ Failed to write access_token.json from env:", ex)
 
-# Optional overrides via env
-OVR_USER  = os.getenv("VNS_USERNAME")  # manual override
+# --- Option 2: PAT mode (TokenManager manual/VPS path) ---
+GITHUB_PAT = os.getenv("GITHUB_PAT")  # ghp_xxx with repo scope
+if GITHUB_PAT:
+    (DATA_DIR / "token.json").write_text(json.dumps({"access_token": GITHUB_PAT}, indent=2))
+    print("✅ token.json written:", DATA_DIR / "token.json")
+    time.sleep(0.05)
+else:
+    print("⚠️ GITHUB_PAT not set (that’s OK if you supplied ACCESS_TOKEN_JSON/B64)")
+
+# --- Ensure user identity exists (vnii reads ~/.vnstock/user.json) ---
+# write to BOTH root and id locations to satisfy all code paths
+OVR_USER  = os.getenv("VNS_USERNAME")
 OVR_EMAIL = os.getenv("VNS_EMAIL")
 
 login, email = OVR_USER, OVR_EMAIL
-if not login:
-    # fetch from GitHub API
+if not login and GITHUB_PAT:
     try:
         r = requests.get(
             "https://api.github.com/user",
@@ -49,38 +56,44 @@ if not login:
             login = u.get("login") or login
             email = u.get("email") or email
         else:
-            print(f"⚠️ GitHub /user returned {r.status_code}: {r.text[:200]}")
+            print(f"⚠️ GitHub /user {r.status_code}: {r.text[:200]}")
     except Exception as e:
         print("⚠️ Could not query GitHub /user:", e)
 
-if not login:
-    print("⚠️ Could not determine GitHub username. "
-          "Set VNS_USERNAME to silence vnii user check.")
-
-# Write/refresh user.json
-payload = {"user": login or "unknown"}
+payload_user = {"user": login or "unknown"}
 if email:
-    payload["email"] = email
-user_json.write_text(json.dumps(payload, indent=2))
-print("📝 user.json written to:", user_json, "=>", payload)
+    payload_user["email"] = email
 
-# 4) (Optional but helpful) license preflight against the sponsorship repo
-if not OWNER:
-    print("⚠️ VNS_REPO_OWNER not set; skipping repo preflight.")
+(DATA_DIR / "user.json").write_text(json.dumps(payload_user, indent=2))
+(ID_DIR / "user.json").write_text(json.dumps(payload_user, indent=2))
+print("📝 user.json (root) ->", DATA_DIR / "user.json", "=>", payload_user)
+print("📝 user.json (id)   ->", ID_DIR / "user.json",   "=>", payload_user)
+
+# --- (Optional) license preflight to your sponsorship repo ---
+OWNER = os.getenv("VNS_REPO_OWNER")          # e.g. "vnstock-hq"
+REPO  = os.getenv("VNS_REPO_NAME", "silver_sponsorship")
+if OWNER and (GITHUB_PAT or ACCESS_TOKEN_JSON or ACCESS_TOKEN_B64):
+    token_for_call = GITHUB_PAT
+    # if only access_token.json was provided, try to read it for the preflight
+    if not token_for_call and (DATA_DIR / "access_token.json").exists():
+        try:
+            token_for_call = json.loads((DATA_DIR / "access_token.json").read_text()).get("access_token")
+        except Exception:
+            pass
+    if token_for_call:
+        url = f"https://api.github.com/repos/{OWNER}/{REPO}"
+        resp = requests.get(url, headers={"Authorization": f"token {token_for_call}",
+                                          "Accept": "application/vnd.github.v3+json"},
+                            timeout=10)
+        print(f"🔎 License check: GET {url} -> {resp.status_code}")
+        if resp.status_code != 200:
+            print("Body:", resp.text[:400])
+            raise SystemExit("❌ Repo access failed. Check OWNER/REPO and token scopes.")
 else:
-    url = f"https://api.github.com/repos/{OWNER}/{REPO}"
-    resp = requests.get(url, headers={"Authorization": f"token {GITHUB_PAT}",
-                                      "Accept": "application/vnd.github.v3+json"},
-                        timeout=10)
-    print(f"🔎 License check: GET {url} -> {resp.status_code}")
-    if resp.status_code != 200:
-        print("Body:", resp.text[:400])
-        raise SystemExit(
-            "❌ PAT missing repo access. Check VNS_REPO_OWNER/VNS_REPO_NAME and PAT scopes."
-        )
+    print("ℹ️ Skipping repo preflight (no OWNER or token).")
 
-print("✅ vnii bootstrap complete.")
-# --- end vnii bootstrap ---
+print("✅ vnii bootstrap complete.\n")
+# ==== end vnii bootstrap ====
 
 import requests
 import pandas as pd
