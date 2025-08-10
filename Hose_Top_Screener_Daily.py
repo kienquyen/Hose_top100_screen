@@ -1,32 +1,37 @@
-import requests
-import pandas as pd
-import ta
-import numpy as np
 import os
-import time
-from datetime import datetime, timedelta, timezone
-import pytz
-# 1) Read PAT from Railway env var (add this in Railway → Variables)
-GITHUB_PAT = os.getenv("GITHUB_PAT")  # set to your ghp_xxx token
+import json
+from pathlib import Path
 
-# 2) Ask vnii where to store tokens
+# 1) Read PAT from env (set this in Railway → Variables)
+GITHUB_PAT = os.getenv("GITHUB_PAT")  # ghp_xxx...
+
+# 2) Resolve vnstock data dir
 try:
     from vnii.colab_helper import get_vnstock_data_dir
     data_dir = Path(get_vnstock_data_dir())
 except Exception as e:
-    # fallback if helper import path differs; adjust to your tree if needed
     print("⚠️ Could not import get_vnstock_data_dir:", e)
     data_dir = Path.home() / ".vnstock"  # sensible default
 
 data_dir.mkdir(parents=True, exist_ok=True)
 
-# 3) If you have a PAT, create token.json — TokenManager will use this directly
+# 3) Write token.json if PAT available (TokenManager prefers this)
 if GITHUB_PAT:
-    token_json = {"access_token": GITHUB_PAT}
-    (data_dir / "token.json").write_text(json.dumps(token_json, indent=2))
-    print("✅ Wrote token.json for vnstock at:", data_dir)
+    token_path = data_dir / "token.json"
+    token_path.write_text(json.dumps({"access_token": GITHUB_PAT}, indent=2))
+    print("✅ Wrote token.json for vnstock at:", token_path)
+    # tiny flush guard (optional)
+    import time as _t; _t.sleep(0.05)
 else:
     print("⚠️ GITHUB_PAT not set; vnstock will try access_token.json refresh method")
+
+import requests
+import pandas as pd
+import ta
+import numpy as np
+import time
+from datetime import datetime, timedelta, timezone
+import pytz
 from vnstock_data import Listing, Quote
 import sys
 print(f"🐍 Python version: {sys.version}")
