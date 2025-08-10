@@ -4,3 +4,6 @@ numpy
 ta
 pytz
 tenacity
+psutil
+packaging
+pydantic
