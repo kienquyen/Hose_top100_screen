@@ -3,4 +3,4 @@ pandas
 numpy
 ta
 pytz
-vnstock_data
+tenacity
