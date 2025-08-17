@@ -321,6 +321,7 @@ def is_buy1_signal(df: pd.DataFrame) -> bool:
     LOOKBACK = 14  # or adjust to your desired value
 
     df['rsi'] = ta.momentum.rsi(df['close'], window=14)
+    df['rsi2'] = ta.momentum.rsi(df['close'], window=2)
     df['average_close'] = df['close'].rolling(window=LOOKBACK).mean()
     df['average_rsi'] = df['rsi'].rolling(window=LOOKBACK).mean()
     df['rsi_bull_divergence'] = (df['close'] <= df['average_close']) & (df['rsi'] > df['average_rsi'])
@@ -379,6 +380,7 @@ def is_buy1_signal(df: pd.DataFrame) -> bool:
         latest['adx'] > 13 and
         latest['mfi'] <85 and
         latest['rsi'] <= 70 and
+        latest['rsi2'] <= 85 and
         bearish_switch_not_recent and
         not latest['rsi_bear_divergence'] and
         not latest['mfi_bear_divergence'] and
