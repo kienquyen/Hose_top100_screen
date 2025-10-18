@@ -107,7 +107,7 @@ import sys
 print(f"🐍 Python version: {sys.version}")
 
 VN100_SYMBOLS = [
-    "AAA", "ACB", "AGG", "ANV", "ASM", "BCG", "BCM", "BID", "BMP", "BVH",
+    "AAA", "ACB", "AGG", "ANV", "ASM", "BCM", "BID", "BMP", "BVH",
     "BWE", "CII", "CMG", "CRE", "CTD", "CTG", "CTR", "DBC", "DCM", "DGC",
     "DGW", "DHC", "DIG", "DPM", "DXG", "DXS", "EIB", "FPT", "FRT", "FTS",
     "GAS", "GEG", "GEX", "GMD", "GVR", "HCM", "HDB", "HDC", "HDG", "HHV",
@@ -169,14 +169,14 @@ def format_signal_table_for_discord(results):
         return "🔍 Không có tín hiệu BUY1, BUY2, BUY3 trong ngày này."
 
     df = pd.DataFrame(results)
-    df = df[['symbol', 'exchange', 'entry_price', 'rsi', 'rsi2', 'mfi', 'ema9', 'signal_type']]
+    df = df[['symbol', 'entry_price', 'rsi2','signal_type']]
     df = df.sort_values(by='signal_type')
 
-    msg = "📊 **Tín hiệu mua trong ngày**:\n```\n"
-    msg += f"{'Symbol':<8} {'Exch':<6} {'Price':<8} {'RSI':<6} {'RSI2':<6} {'MFI':<6} {'EMA9':<6} {'Signal':<6}\n"
+    msg = "📊 **Đây là testing nhé_Tín hiệu trong ngày**:\n```\n"
+    msg += f"{'Symbol':<8} {'Price':<10} {'RSI2':<6} {'Signal':<6}\n"
     msg += "-" * 60 + "\n"
     for _, row in df.iterrows():
-        msg += f"{row['symbol']:<8} {row['exchange']:<6} {row['entry_price']:<8.2f} {row['rsi']:<6.1f} {row['rsi2']:<6.1f} {row['mfi']:<6.1f} {row['ema9']:<6.1f} {row['signal_type']:<6}\n"
+        msg += f"{row['symbol']:<8} {row['entry_price']:<10.1f} {row['rsi2']:<6.1f} {row['signal_type']:<6}\n"
     msg += "```"
     return msg
 #===GET TOP 100 HOSE
@@ -493,11 +493,7 @@ def run_screener_latest(run_date=None):
                 print(f"✅ BUY1 | {symbol} ({exchange}) | Entry: {entry_price:,.2f} VND")
                 results.append({
                     "symbol": symbol,
-                    "exchange": exchange,
-                    "rsi": round(latest['rsi'], 1),
                     "rsi2": round(latest['rsi2'], 1),
-                    "mfi": round(latest['mfi'], 1),
-                    "ema9": round(latest['ema9'], 1),
                     "entry_price": round(entry_price, 1),
                     "signal_type": "BUY1"
                 })
@@ -507,11 +503,7 @@ def run_screener_latest(run_date=None):
                 print(f"✅ BUY2 | {symbol} ({exchange}) | Entry: {entry_price:,.2f} VND")
                 results.append({
                     "symbol": symbol,
-                    "exchange": exchange,
-                    "rsi": round(latest['rsi'], 1),
                     "rsi2": round(latest['rsi2'], 1),
-                    "mfi": round(latest['mfi'], 1),
-                    "ema9": round(latest['ema9'], 1),
                     "entry_price": round(entry_price, 1),
                     "signal_type": "BUY2"
                 })
@@ -521,11 +513,7 @@ def run_screener_latest(run_date=None):
                 print(f"✅ BUY3 | {symbol} ({exchange}) | Entry: {entry_price:,.2f} VND")
                 results.append({
                     "symbol": symbol,
-                    "exchange": exchange,
-                    "rsi": round(latest['rsi'], 1),
                     "rsi2": round(latest['rsi2'], 1),
-                    "mfi": round(latest['mfi'], 1),
-                    "ema9": round(latest['ema9'], 1),
                     "entry_price": round(entry_price, 1),
                     "signal_type": "BUY3"
                 })
